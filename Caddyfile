@@ -1,0 +1,43 @@
+{
+	auto_https off
+	admin off
+}
+
+:{$PORT:8080} {
+	root * /srv
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+		X-Frame-Options "DENY"
+	}
+
+	handle /health {
+		header Content-Type "text/plain; charset=utf-8"
+		header Cache-Control "no-store"
+		respond "ok" 200
+	}
+
+	handle /install-steamos.sh {
+		rewrite * /installers/steamos/install.sh
+		header Content-Type "text/plain; charset=utf-8"
+		header Content-Disposition "inline; filename=install-steamos.sh"
+		header Cache-Control "public, max-age=0, s-maxage=300, must-revalidate"
+		file_server
+	}
+
+	handle /install-steam-deck.sh {
+		rewrite * /installers/steamos/install.sh
+		header Content-Type "text/plain; charset=utf-8"
+		header Content-Disposition "inline; filename=install-steam-deck.sh"
+		header Cache-Control "public, max-age=0, s-maxage=300, must-revalidate"
+		file_server
+	}
+
+	handle {
+		header Cache-Control "public, max-age=300, s-maxage=300"
+		file_server
+	}
+}
