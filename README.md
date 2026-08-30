@@ -59,6 +59,18 @@ The repository is deployed as a static Railway service. `get.tegramc.com` points
 
 Railway deploys directly from the default branch. Pull requests run the tests before changes are merged. The official domain remains the canonical installation address; GitHub is the public source and review interface.
 
+### Railway service settings
+
+Railway automatically detects the repository's root `Dockerfile`. Configure the remaining service settings in the Railway dashboard:
+
+- healthcheck path: `/health`;
+- restart policy: `On Failure`, with up to 3 retries;
+- Serverless: disabled;
+- CDN: enabled;
+- custom domain: `get.tegramc.com`.
+
+This repository intentionally does not include the deprecated `railway.toml` Config as Code file. Railway's replacement Infrastructure as Code format manages an entire Railway project through explicit CLI `plan` and `apply` operations, so it should only be introduced if the whole project is intentionally moved under IaC management.
+
 ## Development
 
 Requirements:
