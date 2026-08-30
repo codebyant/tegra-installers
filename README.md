@@ -18,13 +18,13 @@ The launcher itself lives in a separate repository. This repository contains onl
 Quick installation:
 
 ```bash
-curl -fsSL https://install.tegramc.com/install-steamos.sh | bash
+curl -fsSL https://get.tegramc.com/install-steamos.sh | bash
 ```
 
 Review before running:
 
 ```bash
-curl -fsSLo install-tegra.sh https://install.tegramc.com/install-steamos.sh
+curl -fsSLo install-tegra.sh https://get.tegramc.com/install-steamos.sh
 less install-tegra.sh
 bash install-tegra.sh
 ```
@@ -55,7 +55,7 @@ Each future installer should have its own directory, documentation and tests. Pl
 
 ## Distribution
 
-The repository is deployed as a static Railway service. `install.tegramc.com` points to that service, and Railway's CDN can cache the public files at the edge.
+The repository is deployed as a static Railway service. `get.tegramc.com` points to that service, and Railway's CDN can cache the public files at the edge.
 
 Railway deploys directly from the default branch. Pull requests run the tests before changes are merged. The official domain remains the canonical installation address; GitHub is the public source and review interface.
 

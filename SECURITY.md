@@ -8,7 +8,7 @@ Include the affected installer, a description of the impact and enough informati
 
 ## Trust model
 
-Official installers are distributed only from `https://install.tegramc.com`.
+Official installers are distributed only from `https://get.tegramc.com`.
 
 The scripts in this repository are intentionally public so users can review what runs on their machines. The SteamOS installer does not require root access, does not collect telemetry and restricts application downloads to Tegra's official CDN.
 
