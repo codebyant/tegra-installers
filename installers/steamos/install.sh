@@ -186,8 +186,9 @@ try:
     release = payload if channel == "stable" else payload[channel]
     linux = release["linux"]
     version = str(linux["version"])
-    name = str(linux["name"])
     url = str(linux["url"])
+    parsed = urlparse(url)
+    name = str(linux.get("name") or Path(parsed.path).name)
     checksum = str(linux["checksum"])
 except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
     raise SystemExit(1)
@@ -196,7 +197,6 @@ values = (version, name, url, checksum)
 if any(not value or any(ord(character) < 32 for character in value) for value in values):
     raise SystemExit(1)
 
-parsed = urlparse(url)
 if not allow_insecure and (parsed.scheme != "https" or parsed.hostname != "updates.tegramc.com"):
     raise SystemExit(2)
 

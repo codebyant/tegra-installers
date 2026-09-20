@@ -53,14 +53,14 @@ const server = createServer((request, response) => {
     response.end(JSON.stringify({
       linux: {
         version: '1.2.3',
-        name: 'Tegra-Linux-1.2.3.AppImage',
+        name: '',
         url: `${origin}/Tegra.AppImage`,
         checksum: currentChecksum,
       },
       beta: {
         linux: {
           version: '1.3.0-beta.1',
-          name: 'Tegra-Linux-1.3.0-beta.1.AppImage',
+          name: '',
           url: `${origin}/Tegra-beta.AppImage`,
           checksum: currentBetaChecksum,
         },
@@ -157,6 +157,7 @@ try {
   const installedAppImage = join(dataHome, 'tegra', 'Tegra.AppImage')
   const desktopPath = join(dataHome, 'applications', 'com.seijin.tegramc.app.desktop')
   assert.deepEqual(await readFile(installedAppImage), appImageBody)
+  assert.match(firstRun.stdout, /Tegra.AppImage/)
   assert.ok((await stat(installedAppImage)).mode & 0o100)
   assert.ok((await readFile(desktopPath, 'utf8')).includes(`Exec="${installedAppImage}" %U`))
   assert.equal((await readFile(steamCallPath, 'utf8')).trim(), desktopPath)
@@ -170,6 +171,7 @@ try {
   const betaRun = await runInstaller(['--beta'])
   assert.equal(betaRun.code, 0, `${betaRun.stdout}\n${betaRun.stderr}`)
   assert.match(betaRun.stdout, /latest beta release/)
+  assert.match(betaRun.stdout, /Tegra-beta.AppImage/)
   assert.deepEqual(await readFile(installedAppImage), betaAppImageBody)
   assert.equal((await readFile(join(dataHome, 'tegra', 'version'), 'utf8')).trim(), '1.3.0-beta.1')
 
