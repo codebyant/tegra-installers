@@ -27,8 +27,9 @@ Install the latest beta instead:
 curl -fsSL https://get.tegramc.com/install-steamos.sh | bash -s -- --beta
 ```
 
-`--beta` is shorthand for `--channel beta`. The default channel is `stable`; pass
-`--channel stable` to select it explicitly.
+`--beta`, `--nightly`, and `--experimental` are shorthand for their corresponding
+`--channel` values. The default channel is `stable`; pass `--channel stable` to
+select it explicitly.
 
 Review before running:
 
@@ -46,7 +47,15 @@ The SteamOS installer:
 - accepts downloads only from Tegra's official CDN;
 - creates the desktop entry and registers the `tegra:` protocol;
 - adds Tegra to the Steam library using SteamOS's own helper;
+- installs Tegra's portrait cover, horizontal cover, hero, logo, and icon files
+  for every local Steam account containing the shortcut;
+- reads the AppID assigned by Steam without modifying `shortcuts.vdf`;
 - does not collect or send installation telemetry.
+
+Steam may refresh custom library artwork only after returning to Gaming Mode or
+restarting the client. If Steam has not saved the shortcut yet, artwork setup is
+reported as a warning instead of failing the Tegra installation; running the same
+installer again safely retries it without requesting a duplicate shortcut.
 
 ## Repository structure
 
@@ -58,6 +67,7 @@ installers/
   windows/       Future Windows installers
 tests/           Installer integration tests
 public/          Static landing page
+  steam-library/ Steam library artwork bundled with the installer
 ```
 
 Each future installer should have its own directory, documentation and tests. Platform-specific scripts must not contain credentials, private endpoints or launcher source code.
