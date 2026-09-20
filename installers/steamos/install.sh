@@ -10,8 +10,10 @@ tegra_icon_url="${TEGRA_ICON_URL:-https://tegramc.com/tegra-logo.png}"
 tegra_allow_insecure_test_urls="${TEGRA_ALLOW_INSECURE_TEST_URLS:-0}"
 tegra_skip_steam=0
 tegra_force_steam_shortcut=0
+tegra_channel='stable'
 
-for tegra_arg in "$@"; do
+while [[ "$#" -gt 0 ]]; do
+  tegra_arg="$1"
   case "$tegra_arg" in
     --no-steam)
       tegra_skip_steam=1
@@ -19,8 +21,22 @@ for tegra_arg in "$@"; do
     --force-steam-shortcut)
       tegra_force_steam_shortcut=1
       ;;
+    --stable|--beta|--nightly|--experimental)
+      tegra_channel="${tegra_arg#--}"
+      ;;
+    --channel)
+      if [[ "$#" -lt 2 ]]; then
+        printf '%s\n' 'Option --channel requires a value: stable, beta, nightly or experimental.' >&2
+        exit 2
+      fi
+      shift
+      tegra_channel="$1"
+      ;;
+    --channel=*)
+      tegra_channel="${tegra_arg#--channel=}"
+      ;;
     --help|-h)
-      printf '%s\n' 'Usage: install-steamos.sh [--no-steam] [--force-steam-shortcut]'
+      printf '%s\n' 'Usage: install-steamos.sh [--stable|--beta|--nightly|--experimental | --channel stable|beta|nightly|experimental] [--no-steam] [--force-steam-shortcut]'
       exit 0
       ;;
     *)
@@ -28,14 +44,24 @@ for tegra_arg in "$@"; do
       exit 2
       ;;
   esac
+  shift
 done
+
+case "$tegra_channel" in
+  stable|beta|nightly|experimental)
+    ;;
+  *)
+    printf 'Invalid channel: %s. Expected stable, beta, nightly or experimental.\n' "$tegra_channel" >&2
+    exit 2
+    ;;
+esac
 
 if [[ "${LANG:-}" == pt_BR* ]]; then
   tegra_msg_start='Preparando a instalação do Tegra para o SteamOS.'
   tegra_msg_root='Execute este instalador sem sudo.'
   tegra_msg_arch='Este instalador requer um sistema Linux x86_64.'
   tegra_msg_missing='Comando necessário não encontrado:'
-  tegra_msg_metadata='Consultando a versão estável mais recente.'
+  tegra_msg_metadata="Consultando a versão mais recente do canal $tegra_channel."
   tegra_msg_bad_metadata='A API não retornou dados válidos para o Linux.'
   tegra_msg_untrusted_url='O endereço de download recebido não pertence ao CDN oficial do Tegra.'
   tegra_msg_downloading='Baixando o Tegra'
@@ -54,7 +80,7 @@ else
   tegra_msg_root='Run this installer without sudo.'
   tegra_msg_arch='This installer requires an x86_64 Linux system.'
   tegra_msg_missing='Required command not found:'
-  tegra_msg_metadata='Checking the latest stable release.'
+  tegra_msg_metadata="Checking the latest $tegra_channel release."
   tegra_msg_bad_metadata='The API did not return valid Linux release data.'
   tegra_msg_untrusted_url='The received download address does not belong to the official Tegra CDN.'
   tegra_msg_downloading='Downloading Tegra'
@@ -145,7 +171,7 @@ tegra_log "$tegra_msg_metadata"
 curl "${tegra_curl_args[@]}" --output "$tegra_metadata_path" "$tegra_api_url"
 
 IFS=$'\x1f' read -r tegra_version tegra_file_name tegra_download_url tegra_expected_checksum < <(
-  python3 - "$tegra_metadata_path" "$tegra_allow_insecure_test_urls" <<'PY'
+  python3 - "$tegra_metadata_path" "$tegra_allow_insecure_test_urls" "$tegra_channel" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -153,10 +179,12 @@ from urllib.parse import urlparse
 
 metadata_path = Path(sys.argv[1])
 allow_insecure = sys.argv[2] == "1"
+channel = sys.argv[3]
 
 try:
     payload = json.loads(metadata_path.read_text(encoding="utf-8"))
-    linux = payload["linux"]
+    release = payload if channel == "stable" else payload[channel]
+    linux = release["linux"]
     version = str(linux["version"])
     name = str(linux["name"])
     url = str(linux["url"])

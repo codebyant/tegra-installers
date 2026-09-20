@@ -13,8 +13,14 @@ const homeDir = join(testRoot, 'home')
 const dataHome = join(testRoot, 'data')
 const steamCallPath = join(testRoot, 'steam-call.txt')
 const appImageBody = Buffer.from('mock Tegra AppImage\n', 'utf8')
+const betaAppImageBody = Buffer.from('mock Tegra beta AppImage\n', 'utf8')
+const nightlyAppImageBody = Buffer.from('mock Tegra nightly AppImage\n', 'utf8')
+const experimentalAppImageBody = Buffer.from('mock Tegra experimental AppImage\n', 'utf8')
 const iconBody = Buffer.from('mock icon\n', 'utf8')
 const checksum = createHash('sha512').update(appImageBody).digest('base64')
+const betaChecksum = createHash('sha512').update(betaAppImageBody).digest('base64')
+const nightlyChecksum = createHash('sha512').update(nightlyAppImageBody).digest('base64')
+const experimentalChecksum = createHash('sha512').update(experimentalAppImageBody).digest('base64')
 
 await mkdir(fakeBin, { recursive: true })
 await mkdir(homeDir, { recursive: true })
@@ -33,6 +39,9 @@ await writeExecutable(
 )
 
 let currentChecksum = checksum
+const currentBetaChecksum = betaChecksum
+const currentNightlyChecksum = nightlyChecksum
+const currentExperimentalChecksum = experimentalChecksum
 const server = createServer((request, response) => {
   const address = server.address()
   assert.notEqual(address, null)
@@ -48,12 +57,51 @@ const server = createServer((request, response) => {
         url: `${origin}/Tegra.AppImage`,
         checksum: currentChecksum,
       },
+      beta: {
+        linux: {
+          version: '1.3.0-beta.1',
+          name: 'Tegra-Linux-1.3.0-beta.1.AppImage',
+          url: `${origin}/Tegra-beta.AppImage`,
+          checksum: currentBetaChecksum,
+        },
+      },
+      nightly: {
+        linux: {
+          version: '1.4.0-nightly.1',
+          name: 'Tegra-Linux-1.4.0-nightly.1.AppImage',
+          url: `${origin}/Tegra-nightly.AppImage`,
+          checksum: currentNightlyChecksum,
+        },
+      },
+      experimental: {
+        linux: {
+          version: '1.5.0-experimental.1',
+          name: 'Tegra-Linux-1.5.0-experimental.1.AppImage',
+          url: `${origin}/Tegra-experimental.AppImage`,
+          checksum: currentExperimentalChecksum,
+        },
+      },
     }))
     return
   }
 
   if (request.url === '/Tegra.AppImage') {
     response.end(appImageBody)
+    return
+  }
+
+  if (request.url === '/Tegra-beta.AppImage') {
+    response.end(betaAppImageBody)
+    return
+  }
+
+  if (request.url === '/Tegra-nightly.AppImage') {
+    response.end(nightlyAppImageBody)
+    return
+  }
+
+  if (request.url === '/Tegra-experimental.AppImage') {
+    response.end(experimentalAppImageBody)
     return
   }
 
@@ -72,9 +120,9 @@ assert.notEqual(serverAddress, null)
 assert.equal(typeof serverAddress, 'object')
 const origin = `http://127.0.0.1:${serverAddress.port}`
 
-function runInstaller(extraEnv = {}) {
+function runInstaller(args = [], extraEnv = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn('bash', [installerPath], {
+    const child = spawn('bash', [installerPath, ...args], {
       cwd: dirname(installerPath),
       env: {
         ...process.env,
@@ -119,9 +167,37 @@ try {
   assert.equal(await readFile(steamCallPath, 'utf8'), '')
   assert.match(secondRun.stdout, /Steam shortcut was already requested/)
 
+  const betaRun = await runInstaller(['--beta'])
+  assert.equal(betaRun.code, 0, `${betaRun.stdout}\n${betaRun.stderr}`)
+  assert.match(betaRun.stdout, /latest beta release/)
+  assert.deepEqual(await readFile(installedAppImage), betaAppImageBody)
+  assert.equal((await readFile(join(dataHome, 'tegra', 'version'), 'utf8')).trim(), '1.3.0-beta.1')
+
+  const channelRun = await runInstaller(['--channel', 'beta'])
+  assert.equal(channelRun.code, 0, `${channelRun.stdout}\n${channelRun.stderr}`)
+  assert.deepEqual(await readFile(installedAppImage), betaAppImageBody)
+
+  const inlineChannelRun = await runInstaller(['--channel=beta'])
+  assert.equal(inlineChannelRun.code, 0, `${inlineChannelRun.stdout}\n${inlineChannelRun.stderr}`)
+  assert.deepEqual(await readFile(installedAppImage), betaAppImageBody)
+
+  const nightlyRun = await runInstaller(['--nightly'])
+  assert.equal(nightlyRun.code, 0, `${nightlyRun.stdout}\n${nightlyRun.stderr}`)
+  assert.match(nightlyRun.stdout, /latest nightly release/)
+  assert.deepEqual(await readFile(installedAppImage), nightlyAppImageBody)
+
+  const experimentalRun = await runInstaller(['--channel', 'experimental'])
+  assert.equal(experimentalRun.code, 0, `${experimentalRun.stdout}\n${experimentalRun.stderr}`)
+  assert.match(experimentalRun.stdout, /latest experimental release/)
+  assert.deepEqual(await readFile(installedAppImage), experimentalAppImageBody)
+
+  const invalidChannelRun = await runInstaller(['--channel', 'preview'])
+  assert.equal(invalidChannelRun.code, 2)
+  assert.match(invalidChannelRun.stderr, /Invalid channel/)
+
   const invalidDataHome = join(testRoot, 'invalid-data')
   currentChecksum = Buffer.alloc(64).toString('base64')
-  const invalidRun = await runInstaller({ XDG_DATA_HOME: invalidDataHome })
+  const invalidRun = await runInstaller([], { XDG_DATA_HOME: invalidDataHome })
   assert.notEqual(invalidRun.code, 0)
   assert.match(invalidRun.stderr, /checksum does not match/)
 

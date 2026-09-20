@@ -21,6 +21,15 @@ Quick installation:
 curl -fsSL https://get.tegramc.com/install-steamos.sh | bash
 ```
 
+Install the latest beta instead:
+
+```bash
+curl -fsSL https://get.tegramc.com/install-steamos.sh | bash -s -- --beta
+```
+
+`--beta` is shorthand for `--channel beta`. The default channel is `stable`; pass
+`--channel stable` to select it explicitly.
+
 Review before running:
 
 ```bash
